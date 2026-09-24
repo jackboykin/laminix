@@ -90,6 +90,8 @@ in
         "share/xdg-desktop-portal"
         "share/wayland-sessions"
         "share/xsessions"
+        "share/applications"
+        "etc/xdg/autostart"
         "etc/xdg/systemd"
         "share/fish"
         "share/bash-completion"
@@ -97,10 +99,11 @@ in
       ];
       description = ''
         Layer paths left out of the profile. A wrapper showed a dependency's
-        dirs to one program, but daemons and shells read these straight from
-        the profile, so folding them in would register the dependency's
-        services and completions for everyone. Each entry names one directory
-        directly below a searched path, such as share/dbus-1.
+        dirs to one program, but daemons, shells, and menus read these straight
+        from the profile, so folding them in would register the dependency's
+        services, autostart entries, menu entries, and completions for
+        everyone. Each entry names one directory directly below a searched
+        path, such as `share/dbus-1`.
       '';
     };
 
