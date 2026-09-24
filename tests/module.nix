@@ -46,7 +46,12 @@ let
     ];
   };
   rebuilt = eval {
-    nixpkgs.overlays = lib.mkAfter [ (_: _: { inherit (nixpkgs.legacyPackages.${system}) hello; }) ];
+    nixpkgs.overlays = lib.mkOrder 2000 [
+      (_: _: { inherit (nixpkgs.legacyPackages.${system}) hello; })
+    ];
+  };
+  patched = eval {
+    nixpkgs.overlays = [ (_: prev: { hello = prev.hello.overrideAttrs { doCheck = false; }; }) ];
   };
   deepExclude = eval { environment.laminix.exclude = lib.mkForce [ "share/dbus-1/services" ]; };
   nestedExclude = eval { environment.laminix.exclude = lib.mkForce [ "share/icons/hicolor" ]; };
@@ -90,6 +95,8 @@ let
         unchecked = strict.pkgs.less.overrideAttrs { doCheck = false; };
       in
       !(unchecked.laminix or false) && unchecked.drvPath != strict.pkgs.less.drvPath;
+    "an earlier overlay's package is the one shimmed" =
+      patched.pkgs.hello.laminix && patched.pkgs.hello.srcPaths != base.pkgs.hello.srcPaths;
   };
   broken = lib.attrNames (lib.filterAttrs (_: ok: !ok) checks);
 in

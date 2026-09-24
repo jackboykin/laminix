@@ -144,7 +144,8 @@ in
         message = "environment.laminix.exclude: ${e} is not one directory directly below a searched path that no other searched path contains (${toString searched}).";
       }) cfg.exclude;
 
-    nixpkgs.overlays = [ overlay ];
+    # Last, so the shims wrap whatever the other overlays made.
+    nixpkgs.overlays = lib.mkAfter [ overlay ];
 
     # Shims drop whole PKG/share dirs, so the profile must link them whole.
     environment.pathsToLink = map (s: "/${s}") searched;
