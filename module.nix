@@ -63,11 +63,12 @@ in
         "kdePackages.spectacle"
       ];
       description = ''
-        Attribute paths in pkgs to replace with shims. Each must have binary
-        wrappers (makeBinaryWrapper); the build fails otherwise. A shim only
-        works from a profile the session searches, such as
-        environment.systemPackages or users.users.*.packages: `nix run` on
-        one misses its dependencies.
+        Attribute paths in `pkgs` to replace with shims. Each must have
+        binary wrappers from `makeBinaryWrapper`; the build fails otherwise.
+        A shim only works from a profile the session searches, such as
+        {option}`environment.systemPackages` or
+        {option}`users.users.<name>.packages`: `nix run` on one misses its
+        dependencies.
       '';
     };
 
@@ -76,8 +77,8 @@ in
       default = [ "PATH" ];
       description = ''
         Variables the wrappers keep even though the session searches profiles
-        for them. Folding PATH dirs into the profile would put every
-        dependency's commands on everyone's PATH.
+        for them. Folding `PATH` dirs into the profile would put every
+        dependency's commands on everyone's `PATH`.
       '';
     };
 
@@ -111,10 +112,11 @@ in
       type = types.bool;
       default = false;
       description = ''
-        Search only /etc/profiles/per-user/$USER and /run/current-system/sw.
-        Every entry in environment.profiles is probed on every lookup, whether
-        or not it exists. Packages from nix-env, nix profile, or standalone
-        Home Manager drop out of every search path, PATH included.
+        Search only {file}`/etc/profiles/per-user/$USER` and
+        {file}`/run/current-system/sw`. Every entry in
+        {option}`environment.profiles` is probed on every lookup, whether or
+        not it exists. Packages from `nix-env`, `nix profile`, or standalone
+        Home Manager drop out of every search path, `PATH` included.
       '';
     };
   };
