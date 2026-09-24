@@ -124,8 +124,9 @@ in
         Search only {file}`/etc/profiles/per-user/$USER` and
         {file}`/run/current-system/sw`. Every entry in
         {option}`environment.profiles` is probed on every lookup, whether or
-        not it exists. Packages from `nix-env`, `nix profile`, or standalone
-        Home Manager drop out of every search path, `PATH` included.
+        not it exists. Packages from `nix-env`, `nix profile`, or Home
+        Manager without {option}`home-manager.useUserPackages` drop out of
+        every search path, `PATH` included.
       '';
     };
   };

@@ -86,7 +86,7 @@ Without flakes, import `module.nix` from a copy of the repository, such as one f
 
 With Plasma 6, laminix shims the session, Dolphin, Konsole, and Kate. To choose others, set `environment.laminix.packages` to attribute paths such as `"kdePackages.okular"`.
 
-If you install nothing with `nix-env`, `nix profile`, or standalone Home Manager, also set `environment.laminix.pruneProfiles = true`. It drops the profiles those tools use from every search path, `PATH` included.
+If you install nothing with `nix-env`, `nix profile`, or Home Manager without `home-manager.useUserPackages = true`, also set `environment.laminix.pruneProfiles = true`. It drops the profiles those tools use from every search path, `PATH` included.
 
 ## Caveats
 
