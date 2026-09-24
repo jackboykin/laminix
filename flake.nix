@@ -18,7 +18,7 @@
     {
       nixosModules.default = ./module.nix;
 
-      lib.shim = pkgs: import ./shim.nix { inherit (pkgs) lib runCommandLocal makeBinaryWrapper; };
+      lib.shim = pkgs: pkgs.callPackage ./shim.nix { };
 
       packages = forAllSystems (
         system:

@@ -2,6 +2,7 @@
   lib,
   runCommandLocal,
   makeBinaryWrapper,
+  binutils-unwrapped,
 }:
 {
   pairs,
@@ -25,7 +26,11 @@ let
       pairs = toString pairs;
       exclude = toString exclude;
       inherit (makeBinaryWrapper) extractCmd;
-      nativeBuildInputs = [ makeBinaryWrapper ];
+      # 26.05's extractCmd runs strings from PATH.
+      nativeBuildInputs = [
+        makeBinaryWrapper
+        binutils-unwrapped
+      ];
       passthru =
         (pkg.passthru or { })
         // lib.genAttrs (lib.intersectLists passthroughOutputs pkg.outputs) (o: pkg.${o})

@@ -28,6 +28,7 @@ let
     name: paths:
     pkgs.buildEnv {
       inherit name paths;
+      nativeBuildInputs = [ pkgs.binutils-unwrapped ];
       postBuild = ''
         extractCmd=${extract}
         source ${checks}
@@ -131,7 +132,7 @@ let
     '';
 in
 {
-  shim = runCommand "laminix-test-shim" { } ''
+  shim = runCommand "laminix-test-shim" { nativeBuildInputs = [ pkgs.binutils-unwrapped ]; } ''
     set -x
     absent() {
       if grep -qF "$1" <<<"$2"; then

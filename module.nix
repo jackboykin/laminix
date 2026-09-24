@@ -24,7 +24,7 @@ let
 
   shim =
     pkgs':
-    import ./shim.nix { inherit (pkgs') lib runCommandLocal makeBinaryWrapper; } {
+    pkgs'.callPackage ./shim.nix { } {
       inherit pairs;
       inherit (cfg) exclude;
     };
@@ -144,6 +144,7 @@ in
 
     environment.extraSetup = ''
       extractCmd=${pkgs.makeBinaryWrapper.extractCmd}
+      PATH=$PATH:${pkgs.buildPackages.binutils-unwrapped}/bin
       source ${./checks.sh}
     '';
   };
