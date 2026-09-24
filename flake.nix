@@ -9,11 +9,12 @@
       nixpkgs,
     }:
     let
-      inherit (nixpkgs) lib;
-      forAllSystems = lib.genAttrs [
-        "x86_64-linux"
-        "aarch64-linux"
-      ];
+      forAllSystems =
+        f:
+        nixpkgs.lib.genAttrs [
+          "x86_64-linux"
+          "aarch64-linux"
+        ] (system: f nixpkgs.legacyPackages.${system});
     in
     {
       nixosModules.default = ./module.nix;
@@ -21,89 +22,18 @@
       lib.shim = pkgs: pkgs.callPackage ./shim.nix { };
 
       packages = forAllSystems (
-        system:
+        pkgs:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          audit = pkgs.callPackage ./audit.nix { };
         in
         {
-          default = self.packages.${system}.audit;
-          audit = pkgs.writeShellApplication {
-            name = "laminix-audit";
-            runtimeInputs = [
-              pkgs.strace
-              pkgs.gawk
-              pkgs.coreutils
-            ];
-            text = builtins.readFile ./audit.sh;
-          };
+          inherit audit;
+          default = audit;
         }
       );
 
-      checks = forAllSystems (
-        system:
-        let
-          pkgs = nixpkgs.legacyPackages.${system};
-        in
-        import ./tests/shim.nix {
-          inherit pkgs;
-          shim = self.lib.shim pkgs;
-          checks = ./checks.sh;
-        }
-        // {
-          module = import ./tests/module.nix {
-            inherit nixpkgs system;
-            module = self.nixosModules.default;
-          };
-          plasma = import ./tests/plasma.nix {
-            inherit pkgs;
-            module = self.nixosModules.default;
-          };
-        }
-      );
+      checks = forAllSystems (pkgs: import ./tests { inherit self nixpkgs pkgs; });
 
-      # nixpkgs' own Nix formatting and lint, from its ci/treefmt.nix.
-      formatter = forAllSystems (
-        system:
-        let
-          pkgs = nixpkgs.legacyPackages.${system};
-        in
-        pkgs.treefmt.withConfig {
-          runtimeInputs = [
-            pkgs.nixf-diagnose
-            pkgs.nixfmt
-            pkgs.markdown-code-runner
-          ];
-          settings = {
-            tree-root-file = "flake.nix";
-            on-unmatched = "debug";
-            formatter = {
-              nixf-diagnose = {
-                command = "nixf-diagnose";
-                options = [ "--auto-fix" ];
-                includes = [ "*.nix" ];
-                priority = -1;
-              };
-              nixfmt = {
-                command = "nixfmt";
-                includes = [ "*.nix" ];
-              };
-              markdown-code-runner = {
-                command = "mdcr";
-                options = [
-                  "--config=${
-                    pkgs.writers.writeTOML "markdown-code-runner-config" {
-                      presets.nixfmt = {
-                        language = "nix";
-                        command = [ "nixfmt" ];
-                      };
-                    }
-                  }"
-                ];
-                includes = [ "*.md" ];
-              };
-            };
-          };
-        }
-      );
+      formatter = forAllSystems (pkgs: pkgs.callPackage ./treefmt.nix { });
     };
 }
