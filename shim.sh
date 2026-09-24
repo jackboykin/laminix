@@ -2,6 +2,11 @@
 # searches. The dirs become layers, which the installing profile folds in
 # through propagated-user-env-packages.
 
+# The shim keeps the original's name, so say whose failure this is.
+failureHook() {
+  echo "laminix: failed to shim $name, which is unchanged. To build without the shim, remove it from environment.laminix.packages." >&2
+}
+
 outs=($outputs)
 srcs=($srcPaths)
 
