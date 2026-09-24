@@ -21,7 +21,10 @@ let
       "XDG_DATA_DIRS:share"
       "QT_PLUGIN_PATH:lib/qt-6/plugins"
     ];
-    exclude = [ "share/dbus-1" ];
+    exclude = [
+      "share/dbus-1"
+      "share/dep.list"
+    ];
   };
 
   profile =
@@ -37,7 +40,7 @@ let
 
   dep = runCommand "laminix-test-dep" { } ''
     mkdir -p $out/share/icons/hicolor $out/share/dbus-1/services $out/lib/qt-6/plugins $out/share/gsettings-schemas/dep
-    touch $out/share/icons/hicolor/dep.png $out/share/dbus-1/services/dep.service
+    touch $out/share/icons/hicolor/dep.png $out/share/dbus-1/services/dep.service $out/share/dep.list
     touch $out/lib/qt-6/plugins/dep.so $out/share/gsettings-schemas/dep/schema
   '';
 
@@ -179,6 +182,7 @@ in
     [[ -e $e/share/icons/hicolor/dep.png ]]
     [[ -e $e/lib/qt-6/plugins/dep.so ]]
     [[ ! -e $e/share/dbus-1/services/dep.service ]]
+    [[ ! -e $e/share/dep.list ]]
     [[ -e $e/share/dbus-1/services/app.service ]]
     [[ -e $e/share/dep2-marker ]]
 

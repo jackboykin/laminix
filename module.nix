@@ -187,19 +187,31 @@ in
         "share/wayland-sessions"
         "share/xsessions"
         "share/applications"
+        "share/desktop-directories"
+        "share/kglobalaccel"
+        "share/krunner"
+        "share/kio"
+        "share/solid"
+        "share/kconf_update"
+        "share/user-tmpfiles.d"
+        "share/vulkan"
         "etc/xdg/autostart"
         "etc/xdg/systemd"
+        "etc/xdg/menus"
+        "etc/xdg/plasma-workspace"
+        "etc/xdg/mimeapps.list"
         "share/fish"
         "share/bash-completion"
         "share/zsh"
       ];
       description = ''
         Layer paths left out of the profile. A wrapper showed a dependency's
-        dirs to one program, but daemons, shells, and menus read these straight
-        from the profile, so folding them in would register the dependency's
-        services, autostart entries, menu entries, and completions for
-        everyone. Each entry names one directory directly below a searched
-        path, such as `share/dbus-1`.
+        dirs to one program, but daemons, shells, menus, the session, and the
+        Vulkan loader read these straight from the profile, so folding them in
+        would register the dependency's services, shortcuts, menu entries,
+        login scripts, Vulkan layers, and completions for everyone. Each entry
+        names one directory or file directly below a searched path, such as
+        `share/dbus-1`.
       '';
     };
 
@@ -228,7 +240,7 @@ in
           lib.elem (dirOf e) searched
           && !lib.any (s: lib.hasPrefix "${s}/" (dirOf e)) searched
           && !lib.elem e searched;
-        message = "environment.laminix.exclude: ${e} is not one directory directly below a searched path that no other searched path contains (${toString searched}).";
+        message = "environment.laminix.exclude: ${e} is not one directory or file directly below a searched path that no other searched path contains (${toString searched}).";
       }) cfg.exclude;
 
     warnings = map (
