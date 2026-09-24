@@ -30,6 +30,15 @@ let
     };
 
   paths = map (lib.splitString ".") cfg.packages;
+  # nixpkgs builds packages such as libvlc from overrides of others, and users
+  # patch with overrideAttrs, so both act on the original, not the shim.
+  install =
+    final: pkg:
+    shim final pkg
+    // lib.intersectAttrs {
+      override = null;
+      overrideAttrs = null;
+    } pkg;
   # Keys that depend on prev make pkgs recurse; missing paths fail an assertion.
   overlay =
     final: prev:
@@ -38,7 +47,7 @@ let
       if prev ? ${top} then
         lib.updateManyAttrsByPath (map (p: {
           path = lib.tail p;
-          update = shim final;
+          update = install final;
         }) (lib.filter (p: lib.head p == top && lib.hasAttrByPath p prev) paths)) prev.${top}
       else
         null

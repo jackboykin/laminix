@@ -80,11 +80,16 @@ let
     "an exclude under a nested searched path fails an assertion" =
       lib.any (lib.hasInfix "share/icons/hicolor") (failed nestedExclude);
     "shims pass checkMeta" = lib.isString strict.pkgs.less.drvPath;
-    "override reaches the original" =
+    "an override is the plain package" =
       let
         secure = strict.pkgs.less.override { withSecure = true; };
       in
-      secure.laminix && secure.srcPaths != strict.pkgs.less.srcPaths;
+      !(secure.laminix or false) && secure.drvPath != strict.pkgs.less.drvPath;
+    "an overrideAttrs is the plain package" =
+      let
+        unchecked = strict.pkgs.less.overrideAttrs { doCheck = false; };
+      in
+      !(unchecked.laminix or false) && unchecked.drvPath != strict.pkgs.less.drvPath;
   };
   broken = lib.attrNames (lib.filterAttrs (_: ok: !ok) checks);
 in
