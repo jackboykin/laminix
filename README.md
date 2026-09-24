@@ -84,7 +84,20 @@ Without flakes, import `module.nix` from a copy of the repository, such as one f
 }
 ```
 
-With Plasma 6, laminix shims the session, Dolphin, Konsole, and Kate. To choose others, set `environment.laminix.packages` to attribute paths such as `"kdePackages.okular"`.
+With Plasma 6, laminix shims every package Plasma installs that has wrappers to rebuild: the desktop, its apps such as Dolphin, Konsole, and System Settings, and its background services. That's `environment.laminix.plasma = "full"`, the default. To shim only the desktop and its apps, set it to `"base"`, or to `"none"` to leave Plasma alone. The option's description in `module.nix` lists each set's packages.
+
+To shim more programs, list their attribute paths. They're added to the Plasma set:
+
+```nix
+{
+  environment.laminix.packages = [
+    "kdePackages.kmail"
+    "obs-studio"
+  ];
+}
+```
+
+laminix rebuilds wrappers made by `makeBinaryWrapper`, and leaves any other program as it is.
 
 If you install nothing with `nix-env`, `nix profile`, or Home Manager without `home-manager.useUserPackages = true`, also set `environment.laminix.pruneProfiles = true`. It drops the profiles those tools use from every search path, `PATH` included.
 
@@ -92,7 +105,6 @@ If you install nothing with `nix-env`, `nix profile`, or Home Manager without `h
 
 - A shim works only when installed in a profile, such as `environment.systemPackages`.
 - Files a wrapper showed to one program, such as icons, Qt plugins, and QML modules, become visible to every program. Files that would register something for everyone, such as services, menu entries, and shortcuts, stay out. `environment.laminix.exclude` lists them, and you can add more.
-- Only wrappers made by `makeBinaryWrapper` are rebuilt.
 - `override` and `overrideAttrs` on a shimmed package give the plain package without a shim. To patch a package and keep its shim, patch it in an overlay.
 - The system build fails, instead of the session, if a shim would split a Plasma package or lose KWin's trust.
 

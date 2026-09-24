@@ -189,8 +189,11 @@ in
   '';
 
   shim-refuses-kpackage-split = fails (shimWith splitApp) "would split KPackage share/plasma/plasmoids/org.laminix.widget";
-  shim-refuses-unwrapped = fails (shimWith plain) "found no binary wrappers";
-  shim-failure-names-laminix = fails (shimWith plain) "laminix: failed to shim laminix-test-plain";
+  shim-passes-unwrapped = runCommand "laminix-test-unwrapped" { } ''
+    cmp ${shimWith plain}/bin/plain ${plain}/bin/plain
+    touch $out
+  '';
+  shim-failure-names-laminix = fails (shimWith splitApp) "laminix: failed to shim laminix-test-split";
   profile-refuses-untrusted = fails (profile "laminix-test-untrusted-env" [
     untrusted
   ]) "kwin won't trust";

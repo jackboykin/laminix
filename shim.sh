@@ -54,7 +54,6 @@ isFlat() {
   [[ -n ${flat[$var:${dir#"$NIX_STORE"/*/}]-} ]]
 }
 
-rewrapped=0
 reshim() {
   local exe=$1 kept=() rel=${wrapper#"$src"/} a inherit= other=
   shift
@@ -85,7 +84,6 @@ reshim() {
     cp "$exe" "$dst/${exe#"$src"/}"
     makeBinaryWrapper "$dst/${exe#"$src"/}" "$dst/$rel" "${kept[@]}"
   fi
-  rewrapped=$((rewrapped + 1))
 }
 
 writeLayers() {
@@ -143,8 +141,3 @@ for i in "${!outs[@]}"; do
 
   writeLayers
 done
-
-if ((rewrapped == 0)); then
-  echo "laminix: found no binary wrappers to rebuild" >&2
-  exit 1
-fi

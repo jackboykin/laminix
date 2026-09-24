@@ -29,7 +29,83 @@ let
       inherit (cfg) exclude;
     };
 
-  paths = map (lib.splitString ".") cfg.packages;
+  # What services.desktopManager.plasma6 installs that has binary wrappers.
+  # A name missing from pkgs, as union is on 26.05, is skipped.
+  plasmaBase = [
+    "ark"
+    "discover"
+    "dolphin"
+    "elisa"
+    "gwenview"
+    "kate"
+    "khelpcenter"
+    "kinfocenter"
+    "kmenuedit"
+    "konsole"
+    "kwalletmanager"
+    "kwin"
+    "okular"
+    "plasma-desktop"
+    "plasma-systemmonitor"
+    "plasma-workspace"
+    "spectacle"
+    "systemsettings"
+  ];
+  plasmaSets = {
+    none = [ ];
+    base = plasmaBase;
+    full = plasmaBase ++ [
+      "baloo"
+      "baloo-widgets"
+      "breeze"
+      "drkonqi"
+      "frameworkintegration"
+      "kactivitymanagerd"
+      "kauth"
+      "kcmutils"
+      "kconfig"
+      "kde-cli-tools"
+      "kde-gtk-config"
+      "kde-inotify-survey"
+      "kded"
+      "kdeplasma-addons"
+      "kfilemetadata"
+      "kglobalacceld"
+      "kguiaddons"
+      "kiconthemes"
+      "kio"
+      "kio-admin"
+      "kio-extras"
+      "kio-fuse"
+      "knighttime"
+      "kpackage"
+      "krdp"
+      "kscreen"
+      "kscreenlocker"
+      "kservice"
+      "ksystemstats"
+      "ktexteditor"
+      "kunifiedpush"
+      "kwallet"
+      "kwin-x11"
+      "kwrited"
+      "libkscreen"
+      "libksysguard"
+      "plasma-activities"
+      "plasma-browser-integration"
+      "plasma-keyboard"
+      "polkit-kde-agent-1"
+      "solid"
+      "union"
+      "xdg-desktop-portal-kde"
+    ];
+  };
+  plasmaPaths = map (p: [
+    "kdePackages"
+    p
+  ]) plasmaSets.${cfg.plasma};
+  userPaths = map (lib.splitString ".") cfg.packages;
+  paths = lib.unique (plasmaPaths ++ userPaths);
   # nixpkgs builds packages such as libvlc from overrides of others, and users
   # patch with overrideAttrs, so both act on the original, not the shim.
   install =
@@ -57,22 +133,32 @@ in
   options.environment.laminix = {
     enable = lib.mkEnableOption "moving wrapped packages' per-dependency search paths into the profiles that install them";
 
+    plasma = mkOption {
+      type = types.enum [
+        "none"
+        "base"
+        "full"
+      ];
+      default = if config.services.desktopManager.plasma6.enable then "full" else "none";
+      defaultText = lib.literalExpression ''if config.services.desktopManager.plasma6.enable then "full" else "none"'';
+      description = ''
+        Which of Plasma's packages to shim. `"base"` is the desktop and the
+        apps Plasma installs: ${lib.concatMapStringsSep ", " (p: "`${p}`") plasmaSets.base}.
+        `"full"` adds its background services and the frameworks behind them:
+        ${lib.concatMapStringsSep ", " (p: "`${p}`") (lib.subtractLists plasmaSets.base plasmaSets.full)}.
+      '';
+    };
+
     packages = mkOption {
       type = types.listOf types.str;
-      default = lib.optionals config.services.desktopManager.plasma6.enable [
-        "kdePackages.plasma-workspace"
-        "kdePackages.kwin"
-        "kdePackages.dolphin"
-        "kdePackages.konsole"
-        "kdePackages.kate"
-      ];
-      defaultText = lib.literalMD "Plasma's session and its most-launched apps when Plasma 6 is enabled, else none";
+      default = [ ];
       example = [
-        "kdePackages.okular"
-        "kdePackages.spectacle"
+        "kdePackages.kmail"
+        "obs-studio"
       ];
       description = ''
-        Attribute paths in `pkgs` to replace with shims. Each must have
+        Attribute paths in `pkgs` to replace with shims, in addition to the
+        Plasma set from {option}`environment.laminix.plasma`. Each must have
         binary wrappers from `makeBinaryWrapper`; the build fails otherwise.
         A shim only works from a profile the session searches, such as
         {option}`environment.systemPackages` or
@@ -134,9 +220,9 @@ in
   config = lib.mkIf cfg.enable {
     assertions =
       map (p: {
-        assertion = (lib.attrByPath p null pkgs).laminix or false;
-        message = "environment.laminix.packages: pkgs.${lib.concatStringsSep "." p} is not a shim: it doesn't exist, or a later overlay rebuilt its scope.";
-      }) paths
+        assertion = (lib.attrByPath p { } pkgs).laminix or false;
+        message = "environment.laminix: pkgs.${lib.concatStringsSep "." p} is not a shim: a later overlay rebuilt its scope.";
+      }) (lib.filter (p: lib.hasAttrByPath p pkgs) paths)
       ++ map (e: {
         assertion =
           lib.elem (dirOf e) searched
@@ -144,6 +230,11 @@ in
           && !lib.elem e searched;
         message = "environment.laminix.exclude: ${e} is not one directory directly below a searched path that no other searched path contains (${toString searched}).";
       }) cfg.exclude;
+
+    warnings = map (
+      p:
+      "environment.laminix.packages: pkgs.${lib.concatStringsSep "." p} doesn't exist, so nothing replaces it."
+    ) (lib.filter (p: !lib.hasAttrByPath p pkgs) userPaths);
 
     # Last, so the shims wrap whatever the other overlays made.
     nixpkgs.overlays = lib.mkAfter [ overlay ];

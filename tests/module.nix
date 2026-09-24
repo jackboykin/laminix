@@ -53,6 +53,19 @@ let
   patched = eval {
     nixpkgs.overlays = [ (_: prev: { hello = prev.hello.overrideAttrs { doCheck = false; }; }) ];
   };
+  plasma = eval { services.desktopManager.plasma6.enable = true; };
+  plasmaMissing = eval {
+    services.desktopManager.plasma6.enable = true;
+    nixpkgs.overlays = [ (_: prev: { kdePackages = removeAttrs prev.kdePackages [ "union" ]; }) ];
+  };
+  plasmaBase = eval {
+    services.desktopManager.plasma6.enable = true;
+    environment.laminix.plasma = "base";
+  };
+  plasmaOff = eval {
+    services.desktopManager.plasma6.enable = true;
+    environment.laminix.plasma = "none";
+  };
   deepExclude = eval { environment.laminix.exclude = lib.mkForce [ "share/dbus-1/services" ]; };
   nestedExclude = eval { environment.laminix.exclude = lib.mkForce [ "share/icons/hicolor" ]; };
   # less installs its man output, which checkMeta requires to exist.
@@ -75,9 +88,18 @@ let
           "/lib/qt-6/qml"
         ];
     "a clean configuration passes its assertions" = failed base == [ ];
-    "a misspelled package fails an assertion" = lib.any (lib.hasInfix "kdePackages.dolphinn") (
-      failed typo
-    );
+    "packages add to the full Plasma set" =
+      plasma.pkgs.hello.laminix
+      && plasma.pkgs.kdePackages.okular.laminix
+      && plasma.pkgs.kdePackages.kded.laminix
+      && failed plasma == [ ];
+    "the base Plasma set leaves services alone" =
+      plasmaBase.pkgs.kdePackages.okular.laminix && !(plasmaBase.pkgs.kdePackages.kded.laminix or false);
+    "a Plasma package missing from pkgs is skipped" = failed plasmaMissing == [ ];
+    "plasma = \"none\" leaves Plasma unshimmed" =
+      plasmaOff.pkgs.hello.laminix && !(plasmaOff.pkgs.kdePackages.okular.laminix or false);
+    "a misspelled package warns" =
+      failed typo == [ ] && lib.any (lib.hasInfix "kdePackages.dolphinn") typo.config.warnings;
     "a later overlay replacing a shim fails an assertion" =
       lib.any (lib.hasInfix "pkgs.hello is not a shim") (failed rebuilt);
     "an exclude below the top level fails an assertion" =
