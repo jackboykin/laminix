@@ -9,7 +9,7 @@ in
 import ./shim.nix {
   inherit pkgs;
   shim = self.lib.shim pkgs;
-  checks = ../checks.sh;
+  checkProfile = ../check-profile.sh;
 }
 // {
   module = import ./module.nix {

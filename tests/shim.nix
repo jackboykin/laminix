@@ -1,7 +1,7 @@
 {
   pkgs,
   shim,
-  checks,
+  checkProfile,
 }:
 let
   inherit (pkgs)
@@ -31,7 +31,7 @@ let
       nativeBuildInputs = [ pkgs.binutils-unwrapped ];
       postBuild = ''
         extractCmd=${extract}
-        source ${checks}
+        source ${checkProfile}
       '';
     };
 

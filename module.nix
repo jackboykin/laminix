@@ -150,7 +150,7 @@ in
     environment.extraSetup = ''
       extractCmd=${pkgs.makeBinaryWrapper.extractCmd}
       PATH=$PATH:${pkgs.buildPackages.binutils-unwrapped}/bin
-      source ${./checks.sh}
+      source ${./check-profile.sh}
     '';
   };
 }
