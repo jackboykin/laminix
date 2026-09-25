@@ -10,7 +10,7 @@ Each moved directory lies over your profile as a thin layer or *lamina*.
 
 KDE Plasma gains the most. Its lists add up to hundreds of thousands of failed file lookups, and opening the app launcher, a system tray popup, or a KDE app takes noticeably longer than on other distributions. KDE slowness has been an issue for quite some time ([nixpkgs#363068](https://github.com/NixOS/nixpkgs/issues/363068), [nixpkgs#126590](https://github.com/NixOS/nixpkgs/issues/126590)).
 
-Failed file lookups on start:
+Failed file lookups in each program's first 15 seconds, in a Plasma 6.7 VM, with the program shimmed. Plasma and the apps it installs are shimmed by default; the rest need listing in `environment.laminix.packages`.
 
 <table>
 <tr>
@@ -84,7 +84,7 @@ Without flakes, import `module.nix` from a copy of the repository, such as one f
 }
 ```
 
-With Plasma 6, laminix shims every package Plasma installs that has wrappers to rebuild: the desktop, its apps such as Dolphin, Konsole, and System Settings, and its background services. That's `environment.laminix.plasma = "full"`, the default. To shim only the desktop and its apps, set it to `"base"`, or to `"none"` to leave Plasma alone. The option's description in `module.nix` lists each set's packages.
+With Plasma 6, laminix shims the packages Plasma installs that have wrappers to rebuild. `environment.laminix.plasma` picks which: `"full"`, the default, covers the desktop, its apps, and its background services; `"base"` leaves out the services; `"none"` leaves Plasma alone. The option's description in `module.nix` lists each set's packages.
 
 To shim more programs, list their attribute paths. They're added to the Plasma set:
 
@@ -103,7 +103,7 @@ If you install nothing with `nix-env`, `nix profile`, or Home Manager without `h
 
 ## Caveats
 
-- A shim works only when installed in a profile, such as `environment.systemPackages`.
+- A shim works only when a profile installs it directly, as `environment.systemPackages` does. A module that wraps it first, such as `programs.obs-studio`, fails the build.
 - Only NixOS modules see shims. Packages, including ones your configuration builds with `pkgs.callPackage`, get the originals, so nothing recompiles against a shim.
 - Files a wrapper showed to one program, such as icons, Qt plugins, and QML modules, become visible to every program. Files that would register something for everyone, such as services, menu entries, and shortcuts, stay out. `environment.laminix.exclude` lists them, and you can add more.
 - `override` and `overrideAttrs` on a shimmed package give the plain package without a shim. To patch a package and keep its shim, patch it in an overlay.
