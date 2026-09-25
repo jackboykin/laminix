@@ -104,6 +104,7 @@ If you install nothing with `nix-env`, `nix profile`, or Home Manager without `h
 ## Caveats
 
 - A shim works only when installed in a profile, such as `environment.systemPackages`.
+- Only NixOS modules see shims. Packages, including ones your configuration builds with `pkgs.callPackage`, get the originals, so nothing recompiles against a shim.
 - Files a wrapper showed to one program, such as icons, Qt plugins, and QML modules, become visible to every program. Files that would register something for everyone, such as services, menu entries, and shortcuts, stay out. `environment.laminix.exclude` lists them, and you can add more.
 - `override` and `overrideAttrs` on a shimmed package give the plain package without a shim. To patch a package and keep its shim, patch it in an overlay.
 - The system build fails, instead of the session, if a shim would split a Plasma package or lose KWin's trust.

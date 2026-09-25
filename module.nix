@@ -1,5 +1,6 @@
 {
   config,
+  options,
   lib,
   pkgs,
   ...
@@ -22,12 +23,19 @@ let
   );
   searched = lib.unique (map (p: lib.last (lib.splitString ":" p)) pairs);
 
-  shim =
-    pkgs':
-    pkgs'.callPackage ./shim.nix { } {
-      inherit pairs;
-      inherit (cfg) exclude;
-    };
+  args = options._module.args;
+  base =
+    (lib.modules.mergeAttrDefinitionsWithPrio (
+      args
+      // {
+        definitionsWithLocations = lib.filter (d: d.file != __curPos.file) args.definitionsWithLocations;
+      }
+    )).pkgs.value;
+
+  shim = base.callPackage ./shim.nix { } {
+    inherit pairs;
+    inherit (cfg) exclude;
+  };
 
   # What services.desktopManager.plasma6 installs that has binary wrappers.
   # A name missing from pkgs, as union is on 26.05, is skipped.
@@ -106,30 +114,22 @@ let
   ]) plasmaSets.${cfg.plasma};
   userPaths = map (lib.splitString ".") cfg.packages;
   paths = lib.unique (plasmaPaths ++ userPaths);
-  # nixpkgs builds packages such as libvlc from overrides of others, and users
-  # patch with overrideAttrs, so both act on the original, not the shim.
+  present = lib.filter (p: lib.hasAttrByPath p base) paths;
   install =
-    final: pkg:
-    shim final pkg
+    pkg:
+    shim pkg
     // lib.intersectAttrs {
       override = null;
       overrideAttrs = null;
     } pkg;
-  # Keys that depend on prev make pkgs recurse; missing paths fail an assertion.
-  overlay =
-    final: prev:
-    lib.genAttrs (lib.unique (map lib.head paths)) (
-      top:
-      if prev ? ${top} then
-        lib.updateManyAttrsByPath (map (p: {
-          path = lib.tail p;
-          update = install final;
-        }) (lib.filter (p: lib.head p == top && lib.hasAttrByPath p prev) paths)) prev.${top}
-      else
-        null
-    );
+  shimmed = lib.updateManyAttrsByPath (map (path: {
+    inherit path;
+    update = install;
+  }) present) base;
 in
 {
+  _file = __curPos.file;
+
   options.environment.laminix = {
     enable = lib.mkEnableOption "moving wrapped packages' per-dependency search paths into the profiles that install them";
 
@@ -231,10 +231,10 @@ in
 
   config = lib.mkIf cfg.enable {
     assertions =
-      map (p: {
-        assertion = (lib.attrByPath p { } pkgs).laminix or false;
-        message = "environment.laminix: pkgs.${lib.concatStringsSep "." p} is not a shim: a later overlay rebuilt its scope.";
-      }) (lib.filter (p: lib.hasAttrByPath p pkgs) paths)
+      lib.singleton {
+        assertion = lib.all (p: (lib.attrByPath p { } pkgs).laminix or false) present;
+        message = "environment.laminix: modules get a pkgs without shims, so something else sets it, such as specialArgs.pkgs or a forced _module.args.pkgs.";
+      }
       ++ map (e: {
         assertion =
           lib.elem (dirOf e) searched
@@ -246,10 +246,9 @@ in
     warnings = map (
       p:
       "environment.laminix.packages: pkgs.${lib.concatStringsSep "." p} doesn't exist, so nothing replaces it."
-    ) (lib.filter (p: !lib.hasAttrByPath p pkgs) userPaths);
+    ) (lib.filter (p: !lib.hasAttrByPath p base) userPaths);
 
-    # Last, so the shims wrap whatever the other overlays made.
-    nixpkgs.overlays = lib.mkAfter [ overlay ];
+    _module.args.pkgs = lib.mkOverride 99 shimmed;
 
     # Shims drop whole PKG/share dirs, so the profile must link them whole.
     environment.pathsToLink = map (s: "/${s}") searched;

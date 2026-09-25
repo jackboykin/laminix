@@ -4,8 +4,6 @@
 }:
 pkgs.testers.runNixOSTest {
   name = "laminix-plasma";
-  # Read-only pkgs forbid the module's overlay.
-  node.pkgsReadOnly = false;
   enableOCR = true;
 
   nodes.machine = {

@@ -6,12 +6,13 @@
 let
   inherit (nixpkgs) lib;
 
-  eval =
-    extra:
+  evalWith =
+    system: extra:
     lib.nixosSystem {
       inherit system;
       modules = [
-        module
+        # import drops the file name, which laminix must not rely on.
+        (import module)
         {
           boot.loader.grub.enable = false;
           fileSystems."/" = {
@@ -28,6 +29,7 @@ let
         extra
       ];
     };
+  eval = evalWith system;
 
   failed = sys: map (a: a.message) (lib.filter (a: !a.assertion) sys.config.assertions);
   pairsOf = sys: lib.splitString " " sys.pkgs.hello.pairs;
@@ -45,11 +47,17 @@ let
       "kdePackages.dolphinn"
     ];
   };
-  rebuilt = eval {
+  late = eval {
     nixpkgs.overlays = lib.mkOrder 2000 [
-      (_: _: { inherit (nixpkgs.legacyPackages.${system}) hello; })
+      (_: prev: { hello = prev.hello.overrideAttrs { doCheck = false; }; })
     ];
   };
+  readOnly = evalWith null {
+    imports = [ "${nixpkgs}/nixos/modules/misc/nixpkgs/read-only.nix" ];
+    disabledModules = [ "misc/nixpkgs.nix" ];
+    nixpkgs.pkgs = nixpkgs.legacyPackages.${system};
+  };
+  forced = eval { _module.args.pkgs = lib.mkForce nixpkgs.legacyPackages.${system}; };
   patched = eval {
     nixpkgs.overlays = [ (_: prev: { hello = prev.hello.overrideAttrs { doCheck = false; }; }) ];
   };
@@ -100,8 +108,10 @@ let
       plasmaOff.pkgs.hello.laminix && !(plasmaOff.pkgs.kdePackages.okular.laminix or false);
     "a misspelled package warns" =
       failed typo == [ ] && lib.any (lib.hasInfix "kdePackages.dolphinn") typo.config.warnings;
-    "a later overlay replacing a shim fails an assertion" =
-      lib.any (lib.hasInfix "pkgs.hello is not a shim") (failed rebuilt);
+    "a package built from pkgs gets the original" =
+      !((base.pkgs.callPackage ({ hello }: hello) { }).laminix or false);
+    "read-only pkgs get shims" = readOnly.pkgs.hello.laminix && failed readOnly == [ ];
+    "a forced pkgs fails an assertion" = lib.any (lib.hasInfix "without shims") (failed forced);
     "an exclude below the top level fails an assertion" =
       lib.any (lib.hasInfix "share/dbus-1/services") (failed deepExclude);
     "an exclude under a nested searched path fails an assertion" =
@@ -119,6 +129,8 @@ let
       !(unchecked.laminix or false) && unchecked.drvPath != strict.pkgs.less.drvPath;
     "an earlier overlay's package is the one shimmed" =
       patched.pkgs.hello.laminix && patched.pkgs.hello.srcPaths != base.pkgs.hello.srcPaths;
+    "a later overlay's package is the one shimmed" =
+      late.pkgs.hello.laminix && late.pkgs.hello.srcPaths != base.pkgs.hello.srcPaths;
   };
   broken = lib.attrNames (lib.filterAttrs (_: ok: !ok) checks);
 in
