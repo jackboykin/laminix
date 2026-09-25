@@ -1,0 +1,26 @@
+name: check
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        nixpkgs: [nixos-unstable, nixos-26.05]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: DeterminateSystems/nix-installer-action@v23
+        with:
+          determinate: false
+      - run: nix flake check -L --override-input nixpkgs github:NixOS/nixpkgs/${{ matrix.nixpkgs }}
