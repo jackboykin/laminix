@@ -158,8 +158,8 @@ in
       ];
       description = ''
         Attribute paths in `pkgs` to replace with shims, in addition to the
-        Plasma set from {option}`environment.laminix.plasma`. Each must have
-        binary wrappers from `makeBinaryWrapper`; the build fails otherwise.
+        Plasma set from {option}`environment.laminix.plasma`. laminix rebuilds
+        wrappers made by `makeBinaryWrapper` and leaves the rest as it is.
         A shim only works from a profile the session searches, such as
         {option}`environment.systemPackages` or
         {option}`users.users.<name>.packages`: `nix run` on one misses its
