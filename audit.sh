@@ -23,7 +23,7 @@ fi
 dir=$(mktemp -d)
 trap 'rm -rf "$dir"' EXIT
 strace -ff -qq -e trace=%file,readlink -o "$dir/log" \
-  -- timeout -s INT "$seconds" sh -c 'exec "$@" >/dev/null 2>&1' sh "$@" || true
+  -- timeout -k 2 -s INT "$seconds" sh -c 'exec "$@" >/dev/null 2>&1' sh "$@" || true
 logs=("$dir"/log.*)
 if [[ ! -e ${logs[0]} ]]; then
   echo "laminix-audit: strace recorded nothing" >&2
