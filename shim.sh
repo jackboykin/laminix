@@ -15,6 +15,24 @@ for p in $pairs; do
   flat[$p]=1
 done
 
+# A package's own system bus services, systemd units, polkit actions, and
+# udev rules start programs outside the session, where nothing searches the
+# profile, so those keep their wrappers.
+declare -A outside
+started=()
+for s in "${srcs[@]}"; do
+  for d in share/dbus-1/system-services {lib,etc}/systemd/system share/polkit-1/actions {lib,etc}/udev/rules.d; do
+    if [[ -d $s/$d ]]; then
+      started+=("$s/$d")
+    fi
+  done
+done
+if ((${#started[@]})); then
+  while IFS= read -r p; do
+    outside[$(realpath -m "$p")]=1
+  done < <(grep -RhoE "$NIX_STORE/[^[:space:]\"'<>]+" "${started[@]}" || true)
+fi
+
 # Run each wrapper's embedded makeCWrapper call with FN in its place: bash's
 # parser hands FN the argv, and the wrapper path as $wrapper.
 forEachWrapper() {
@@ -56,6 +74,7 @@ isFlat() {
 
 reshim() {
   local exe=$1 kept=() rel=${wrapper#"$src"/} a inherit= other=
+  [[ -z ${outside[$wrapper]-} ]] || return 0
   shift
   while (($#)); do
     if [[ $1 == --prefix || $1 == --suffix ]] && isFlat "$2" "$3" "$4"; then

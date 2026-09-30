@@ -71,6 +71,12 @@ let
         printf '[Desktop Entry]\nExec=%s %%U\nX-KDE-Wayland-Interfaces=org_kde_plasma_window_management\n' \
           $out/bin/bare >$out/share/applications/bare.desktop
         printf '[D-BUS Service]\nExec=%s\n' $out/bin/app >$out/share/dbus-1/services/app.service
+        mkdir -p $out/libexec $out/share/dbus-1/system-services $out/lib/systemd/system
+        cp ${true'} $out/libexec/.helper-wrapped
+        makeBinaryWrapper $out/libexec/.helper-wrapped $out/libexec/helper --inherit-argv0 \
+          --prefix XDG_DATA_DIRS : ${dep}/share
+        printf '[D-BUS Service]\nExec=/bin/false\nSystemdService=helper.service\n' >$out/share/dbus-1/system-services/helper.service
+        printf '[Service]\nExecStart=%s --flag\n' $out/libexec/helper >$out/lib/systemd/system/helper.service
         echo '{}' >$out/share/plasma/plasmoids/org.laminix.widget/metadata.json
         echo 'Item {}' >$out/share/plasma/plasmoids/org.laminix.widget/contents/main.qml
 
@@ -158,6 +164,9 @@ in
     grep -F "Exec=$s/bin/bare" $s/share/applications/bare.desktop
     grep -F "Exec=$s/bin/app" $s/share/dbus-1/services/app.service
 
+    [[ $(readlink -f $s/libexec/helper) == ${app}/libexec/helper ]]
+    grep -F "ExecStart=$s/libexec/helper --flag" $s/lib/systemd/system/helper.service
+
     [[ -L $s/share/plasma ]]
 
     cmd=$(${extract} $s/bin/twice)
@@ -189,6 +198,7 @@ in
     for b in app bare twice suffixed external; do
       $e/bin/$b
     done
+    $s/libexec/helper
     touch $out
   '';
 

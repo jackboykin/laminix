@@ -18,6 +18,11 @@ pkgs.testers.runNixOSTest {
       user = "alice";
     };
     services.desktopManager.plasma6.enable = true;
+    security.polkit.extraConfig = ''
+      polkit.addRule(function (action, subject) {
+        if (action.id == "org.kde.kio.admin.commands" && subject.user == "alice") return polkit.Result.YES;
+      });
+    '';
     environment.laminix = {
       enable = true;
       pruneProfiles = true;
@@ -50,6 +55,9 @@ pkgs.testers.runNixOSTest {
           machine.execute("su - alice -c 'XDG_RUNTIME_DIR=/run/user/1000 WAYLAND_DISPLAY=wayland-0 dolphin >&2 &'")
           machine.wait_for_text("Dolphin", timeout=120)
           machine.screenshot("session")
+
+      with subtest("Helpers the system bus starts keep their wrappers"):
+          machine.succeed("su - alice -c 'XDG_RUNTIME_DIR=/run/user/1000 QT_QPA_PLATFORM=offscreen kioclient ls admin:///etc' | grep -x passwd")
 
       with subtest("Session trusts shims and loads KPackages"):
           journal = machine.succeed("journalctl -b --no-pager -o cat")
