@@ -117,6 +117,9 @@ let
     "an exclude under a nested searched path fails an assertion" =
       lib.any (lib.hasInfix "share/icons/hicolor") (failed nestedExclude);
     "shims pass checkMeta" = lib.isString strict.pkgs.less.drvPath;
+    "a shim keeps the package's pname and version" =
+      base.pkgs.hello.pname == "hello"
+      && base.pkgs.hello.version == nixpkgs.legacyPackages.${system}.hello.version;
     "an override is the plain package" =
       let
         secure = strict.pkgs.less.override { withSecure = true; };

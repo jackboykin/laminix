@@ -33,6 +33,10 @@ let
       ];
       passthru =
         (pkg.passthru or { })
+        // lib.intersectAttrs {
+          pname = null;
+          version = null;
+        } pkg
         // lib.genAttrs (lib.intersectLists passthroughOutputs pkg.outputs) (o: pkg.${o})
         // {
           laminix = true;
