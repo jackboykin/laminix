@@ -74,6 +74,8 @@ let
     services.desktopManager.plasma6.enable = true;
     environment.laminix.plasma = "none";
   };
+  idle = eval { environment.laminix.packages = lib.mkForce [ ]; };
+  off = eval { environment.laminix.enable = lib.mkForce false; };
   deepExclude = eval { environment.laminix.exclude = lib.mkForce [ "share/dbus-1/services" ]; };
   nestedExclude = eval { environment.laminix.exclude = lib.mkForce [ "share/icons/hicolor" ]; };
   # less installs its man output, which checkMeta requires to exist.
@@ -96,6 +98,8 @@ let
           "/lib/qt-6/qml"
         ];
     "a clean configuration passes its assertions" = failed base == [ ];
+    "nothing to shim leaves the profile alone" =
+      idle.config.system.path.drvPath == off.config.system.path.drvPath;
     "packages add to the full Plasma set" =
       plasma.pkgs.hello.laminix
       && plasma.pkgs.kdePackages.okular.laminix

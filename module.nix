@@ -251,7 +251,7 @@ in
     _module.args.pkgs = lib.mkOverride 99 shimmed;
 
     # Shims drop whole PKG/share dirs, so the profile must link them whole.
-    environment.pathsToLink = map (s: "/${s}") searched;
+    environment.pathsToLink = lib.mkIf (present != [ ]) (map (s: "/${s}") searched);
 
     environment.profiles = lib.mkIf cfg.pruneProfiles (
       lib.mkForce [
@@ -260,7 +260,7 @@ in
       ]
     );
 
-    environment.extraSetup = ''
+    environment.extraSetup = lib.mkIf (present != [ ]) ''
       extractCmd=${pkgs.makeBinaryWrapper.extractCmd}
       PATH=$PATH:${pkgs.buildPackages.binutils-unwrapped}/bin
       source ${./check-profile.sh}

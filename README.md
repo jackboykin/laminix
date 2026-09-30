@@ -97,7 +97,7 @@ To shim more programs, list their attribute paths. They're added to the Plasma s
 }
 ```
 
-laminix rebuilds wrappers made by `makeBinaryWrapper`, and leaves any other program as it is.
+laminix rebuilds wrappers made by `makeBinaryWrapper`, and leaves any other program as it is. With nothing to shim, as on a server, it changes nothing, so a configuration shared by every host can turn it on.
 
 If you install nothing with `nix-env`, `nix profile`, or Home Manager without `home-manager.useUserPackages = true`, also set `environment.laminix.pruneProfiles = true`. It drops the profiles those tools use from every search path, `PATH` included.
 
