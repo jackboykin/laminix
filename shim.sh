@@ -160,3 +160,9 @@ for i in "${!outs[@]}"; do
 
   writeLayers
 done
+
+# Rebuilding the shim reads every original, so keep them all alive with it.
+src=${srcs[0]}
+dst=${!outs[0]}
+own nix-support/laminix-originals
+echo "${srcs[@]}" >"$dst/nix-support/laminix-originals"

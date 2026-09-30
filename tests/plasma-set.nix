@@ -56,9 +56,11 @@ let
     in
     pkgs.kdePackages ? ${n} && pkgs.kdePackages.${n}.outPath == p.outPath && !lib.elem n skipped;
   left = lib.filter (p: !(p.laminix or false) && kde p) sys.config.environment.systemPackages;
-  scanned = lib.concatMap (
-    p: map (o: p.${o}) (lib.subtractLists [ "dev" "debug" "devdoc" ] (p.outputs or [ "out" ]))
-  ) (lib.unique left);
+  shim = pkgs.callPackage ../shim.nix { } {
+    pairs = [ ];
+    exclude = [ ];
+  };
+  scanned = lib.concatMap (p: (shim p).srcPaths) (lib.unique left);
 in
 pkgs.runCommand "laminix-test-plasma-set" { nativeBuildInputs = [ pkgs.binutils-unwrapped ]; } ''
   for p in ${toString scanned}; do

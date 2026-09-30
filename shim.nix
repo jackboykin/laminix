@@ -9,10 +9,13 @@
   exclude,
 }:
 let
+  # Nothing runs from these, so a shim doesn't read them or need them to exist.
   passthroughOutputs = [
     "dev"
     "debug"
     "devdoc"
+    "devtools"
+    "python"
   ];
 
   shim =

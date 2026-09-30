@@ -54,6 +54,7 @@ let
         outputs = [
           "out"
           "sessions"
+          "devtools"
         ];
       }
       ''
@@ -95,6 +96,8 @@ let
         echo ${dep2} >$out/nix-support/propagated-user-env-packages
         mkdir -p $sessions/share/wayland-sessions
         printf '[Desktop Entry]\nExec=%s\n' $out/bin/app >$sessions/share/wayland-sessions/app.desktop
+        mkdir -p $devtools/bin
+        makeBinaryWrapper ${true'} $devtools/bin/tool --prefix XDG_DATA_DIRS : ${dep}/share
         ${extra}
       '';
 
@@ -186,6 +189,10 @@ in
     grep -F ${dep2} $s/nix-support/propagated-user-env-packages
 
     grep -F "Exec=$s/bin/app" ${shimmed.sessions}/share/wayland-sessions/app.desktop
+
+    [[ ${shimmed.devtools} == ${app.devtools} ]]
+    grep -F ${app.sessions} $s/nix-support/laminix-originals
+    absent ${app.devtools} "$(<$s/nix-support/laminix-originals)"
 
     e=${env}
     [[ -e $e/share/icons/hicolor/dep.png ]]
