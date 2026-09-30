@@ -7,7 +7,10 @@ seconds=10
 top=15
 while getopts t:n:h opt; do
   case $opt in
-    t) seconds=$OPTARG ;;
+    t)
+      [[ $OPTARG =~ ^[0-9]+$ ]] || usage
+      seconds=$OPTARG
+      ;;
     n) top=$OPTARG ;;
     *) usage ;;
   esac
@@ -22,8 +25,33 @@ fi
 # One log per process, so no call is split across lines by another's.
 dir=$(mktemp -d)
 trap 'rm -rf "$dir"' EXIT
+# A background job starts with SIGINT ignored, so hand it back to the command.
 strace -ff -qq -e trace=%file,readlink -o "$dir/log" \
-  -- timeout -k 2 -s INT "$seconds" sh -c 'exec "$@" >/dev/null 2>&1' sh "$@" || true
+  -- env --default-signal=INT sh -c 'exec "$@" >/dev/null 2>&1' sh "$@" &
+tracer=$!
+# strace dies of the signal that killed its last tracee, which bash would report.
+disown
+
+# Ctrl-C ends the wait early instead of the audit.
+end=$((SECONDS + seconds))
+trap 'end=0' INT
+while ((SECONDS < end)) && kill -0 "$tracer" 2>/dev/null; do
+  sleep 0.2
+done
+trap - INT
+
+# strace waits for everything it traces, including daemons the command
+# starts, as KMail starts Akonadi, so interrupt them all.
+traced() {
+  grep -lx "TracerPid:[[:space:]]*$tracer" /proc/[0-9]*/status 2>/dev/null | cut -d/ -f3
+}
+for sig in INT KILL; do
+  mapfile -t pids < <(traced)
+  ((${#pids[@]})) || break
+  kill -s "$sig" "${pids[@]}" 2>/dev/null || true
+  timeout 2 tail --pid="$tracer" -f /dev/null && break
+done
+tail --pid="$tracer" -f /dev/null
 logs=("$dir"/log.*)
 if [[ ! -e ${logs[0]} ]]; then
   echo "laminix-audit: strace recorded nothing" >&2
