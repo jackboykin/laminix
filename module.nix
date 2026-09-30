@@ -37,9 +37,11 @@ let
     inherit (cfg) exclude;
   };
 
-  # What services.desktopManager.plasma6 installs that has binary wrappers.
+  # What services.desktopManager.plasma6, and the programs.kde-pim it enables,
+  # can install with binary wrappers, less the two tests/plasma-set.nix skips.
   # A name missing from pkgs, as union is on 26.05, is skipped.
   plasmaBase = [
+    "akonadiconsole"
     "ark"
     "discover"
     "dolphin"
@@ -48,14 +50,21 @@ let
     "kate"
     "khelpcenter"
     "kinfocenter"
+    "kmail"
+    "kmail-account-wizard"
     "kmenuedit"
     "konsole"
+    "kontact"
     "kwalletmanager"
     "kwin"
+    "merkuro"
     "okular"
     "plasma-desktop"
     "plasma-systemmonitor"
     "plasma-workspace"
+    "print-manager"
+    "qrca"
+    "skanpage"
     "spectacle"
     "systemsettings"
   ];
@@ -63,9 +72,13 @@ let
     none = [ ];
     base = plasmaBase;
     full = plasmaBase ++ [
+      "akonadi"
+      "akonadi-search"
       "baloo"
       "baloo-widgets"
+      "bluedevil"
       "breeze"
+      "colord-kde"
       "drkonqi"
       "frameworkintegration"
       "kactivitymanagerd"
@@ -75,6 +88,7 @@ let
       "kde-cli-tools"
       "kde-gtk-config"
       "kde-inotify-survey"
+      "kdepim-runtime"
       "kded"
       "kdeplasma-addons"
       "kfilemetadata"
@@ -103,8 +117,10 @@ let
       "plasma-browser-integration"
       "plasma-keyboard"
       "polkit-kde-agent-1"
+      "powerdevil"
       "solid"
       "union"
+      "wacomtablet"
       "xdg-desktop-portal-kde"
     ];
   };
@@ -153,7 +169,7 @@ in
       type = types.listOf types.str;
       default = [ ];
       example = [
-        "kdePackages.kmail"
+        "kdePackages.kdeconnect-kde"
         "obs-studio"
       ];
       description = ''

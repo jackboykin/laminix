@@ -17,4 +17,8 @@ import ./shim.nix {
     inherit (pkgs.stdenv.hostPlatform) system;
   };
   plasma = import ./plasma.nix { inherit pkgs module; };
+  plasma-set = import ./plasma-set.nix {
+    inherit nixpkgs module;
+    inherit (pkgs.stdenv.hostPlatform) system;
+  };
 }

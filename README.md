@@ -84,14 +84,14 @@ Without flakes, import `module.nix` from a copy of the repository, such as one f
 }
 ```
 
-With Plasma 6, laminix shims the packages Plasma installs that have wrappers to rebuild. `environment.laminix.plasma` picks which: `"full"`, the default, covers the desktop, its apps, and its background services; `"base"` leaves out the services; `"none"` leaves Plasma alone. The option's description in `module.nix` lists each set's packages.
+With Plasma 6, laminix shims the packages Plasma installs that have wrappers to rebuild, including the ones it installs for your hardware and services and the KDE PIM apps from `programs.kde-pim`. `environment.laminix.plasma` picks which: `"full"`, the default, covers the desktop, its apps, and its background services; `"base"` leaves out the services; `"none"` leaves Plasma alone. The option's description in `module.nix` lists each set's packages.
 
 To shim more programs, list their attribute paths. They're added to the Plasma set:
 
 ```nix
 {
   environment.laminix.packages = [
-    "kdePackages.kmail"
+    "kdePackages.kdeconnect-kde"
     "obs-studio"
   ];
 }
