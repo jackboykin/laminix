@@ -41,6 +41,7 @@ let
   # can install with binary wrappers, less the two tests/plasma-set.nix skips.
   # A name missing from pkgs, as union is on 26.05, is skipped.
   plasmaBase = [
+    "akonadi-import-wizard"
     "akonadiconsole"
     "ark"
     "discover"
