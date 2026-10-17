@@ -131,7 +131,9 @@ let
   ]) plasmaSets.${cfg.plasma};
   userPaths = map (lib.splitString ".") cfg.packages;
   paths = lib.unique (plasmaPaths ++ userPaths);
-  present = lib.filter (p: lib.hasAttrByPath p base) paths;
+  # Removed packages linger as aliases that throw, which hasAttrByPath still sees.
+  exists = p: lib.hasAttrByPath p base && (builtins.tryEval (lib.getAttrFromPath p base)).success;
+  present = lib.filter exists paths;
   install =
     pkg:
     shim pkg
@@ -263,7 +265,7 @@ in
     warnings = map (
       p:
       "environment.laminix.packages: pkgs.${lib.concatStringsSep "." p} doesn't exist, so nothing replaces it."
-    ) (lib.filter (p: !lib.hasAttrByPath p base) userPaths);
+    ) (lib.filter (p: !exists p) userPaths);
 
     _module.args.pkgs = lib.mkOverride 99 shimmed;
 

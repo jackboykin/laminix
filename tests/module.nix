@@ -64,7 +64,15 @@ let
   plasma = eval { services.desktopManager.plasma6.enable = true; };
   plasmaMissing = eval {
     services.desktopManager.plasma6.enable = true;
-    nixpkgs.overlays = [ (_: prev: { kdePackages = removeAttrs prev.kdePackages [ "union" ]; }) ];
+    # nixpkgs leaves removed packages behind as aliases that throw.
+    nixpkgs.overlays = [
+      (_: prev: {
+        kdePackages = removeAttrs prev.kdePackages [ "union" ] // {
+          kio-fuse = throw "kio-fuse was removed";
+        };
+      })
+    ];
+    environment.laminix.packages = [ "kdePackages.kio-fuse" ];
   };
   plasmaBase = eval {
     services.desktopManager.plasma6.enable = true;
@@ -107,7 +115,9 @@ let
       && failed plasma == [ ];
     "the base Plasma set leaves services alone" =
       plasmaBase.pkgs.kdePackages.okular.laminix && !(plasmaBase.pkgs.kdePackages.kded.laminix or false);
-    "a Plasma package missing from pkgs is skipped" = failed plasmaMissing == [ ];
+    "a Plasma package missing or removed from pkgs is skipped" = failed plasmaMissing == [ ];
+    "a removed package warns" =
+      lib.any (lib.hasInfix "kdePackages.kio-fuse") plasmaMissing.config.warnings;
     "plasma = \"none\" leaves Plasma unshimmed" =
       plasmaOff.pkgs.hello.laminix && !(plasmaOff.pkgs.kdePackages.okular.laminix or false);
     "a misspelled package warns" =
