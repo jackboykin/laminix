@@ -42,6 +42,7 @@ pkgs.testers.runNixOSTest {
       start_all()
       machine.wait_until_succeeds("pgrep -x plasmashell", timeout=300)
       machine.wait_until_succeeds("pgrep -f bin/.kwin_wayland-wrapped", timeout=60)
+      wayland = machine.succeed("tr '\\0' '\\n' </proc/$(pgrep -x plasmashell)/environ | grep ^WAYLAND_DISPLAY=").strip()
 
       with subtest("Shims search no per-dependency store paths"):
           for b in ["plasmashell", "dolphin", "konsole"]:
@@ -52,7 +53,7 @@ pkgs.testers.runNixOSTest {
           assert not stray, stray
 
       with subtest("Dolphin draws its window"):
-          machine.execute("su - alice -c 'XDG_RUNTIME_DIR=/run/user/1000 WAYLAND_DISPLAY=wayland-0 dolphin >&2 &'")
+          machine.execute(f"su - alice -c 'XDG_RUNTIME_DIR=/run/user/1000 {wayland} dolphin >&2 &'")
           machine.wait_for_text("Dolphin", timeout=120)
           machine.screenshot("session")
 
