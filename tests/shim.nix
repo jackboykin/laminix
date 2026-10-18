@@ -31,11 +31,7 @@ let
     name: paths:
     pkgs.buildEnv {
       inherit name paths;
-      nativeBuildInputs = [ pkgs.binutils-unwrapped ];
-      postBuild = ''
-        extractCmd=${extract}
-        source ${checkProfile}
-      '';
+      postBuild = "source ${checkProfile}";
     };
 
   dep = runCommand "laminix-test-dep" { } ''
@@ -126,16 +122,6 @@ let
       $out/bin/bare >$out/share/applications/bare.desktop
   '';
 
-  untrustedLinked =
-    runCommand "laminix-test-untrusted-linked" { nativeBuildInputs = [ makeBinaryWrapper ]; }
-      ''
-        mkdir -p $out/bin $out/share/applications
-        ln -s ${true'} $out/bin/.bare-wrapped
-        makeBinaryWrapper $out/bin/.bare-wrapped $out/bin/bare --inherit-argv0
-        printf '[Desktop Entry]\nExec=%s\nX-KDE-Wayland-Interfaces=org_kde_plasma_window_management\n' \
-          $out/bin/bare >$out/share/applications/bare.desktop
-      '';
-
   widgetFrom =
     name: file:
     runCommand name { } ''
@@ -215,12 +201,7 @@ in
     touch $out
   '';
   shim-failure-names-laminix = fails (shimWith splitApp) "laminix: failed to shim laminix-test-split";
-  profile-refuses-untrusted = fails (profile "laminix-test-untrusted-env" [
-    untrusted
-  ]) "kwin won't trust";
-  profile-refuses-untrusted-linked = fails (profile "laminix-test-untrusted-linked-env" [
-    untrustedLinked
-  ]) "kwin won't trust";
+  shim-keeps-denied-entries = shimWith untrusted;
   profile-refuses-kpackage-split = fails (profile "laminix-test-split-env" [
     (widgetFrom "laminix-test-widget-a" "metadata.json")
     (widgetFrom "laminix-test-widget-b" "main.qml")
