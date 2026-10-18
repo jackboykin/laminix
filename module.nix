@@ -279,10 +279,6 @@ in
       ]
     );
 
-    environment.extraSetup = lib.mkIf (present != [ ]) ''
-      extractCmd=${pkgs.makeBinaryWrapper.extractCmd}
-      PATH=$PATH:${pkgs.buildPackages.binutils-unwrapped}/bin
-      source ${./check-profile.sh}
-    '';
+    environment.extraSetup = lib.mkIf (present != [ ]) "source ${./check-profile.sh}";
   };
 }

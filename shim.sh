@@ -166,3 +166,32 @@ src=${srcs[0]}
 dst=${!outs[0]}
 own nix-support/laminix-originals
 echo "${srcs[@]}" >"$dst/nix-support/laminix-originals"
+
+# Whether KWin, by the rule in reshim, denies entry $1. Sets $run and $want.
+denied() {
+  local cmd next base
+  grep -q '^X-KDE-Wayland-Interfaces=' "$1" || return 1
+  cmd=$(grep -m1 '^Exec=' "$1") || return 1
+  cmd=${cmd#Exec=}
+  cmd=${cmd%% *}
+  [[ $cmd == /* ]] && want=$(realpath -e "$cmd") || return 1
+  run=$want
+  while next=$("$extractCmd" "$run" | sed -n "1s/^makeCWrapper '\([^']*\)'.*/\1/p") && [[ -n $next ]]; do
+    run=$(realpath -e "$next") || return 1
+  done
+  while [[ ${run##*/} == .*-wrapped ]]; do
+    base=${run##*/}
+    base=${base#.}
+    run=${run%/*}/${base%-wrapped}
+  done
+  [[ $run != "$want" ]]
+}
+
+for i in "${!outs[@]}"; do
+  for d in "${!outs[i]}"/share/applications/*.desktop; do
+    rel=${d#"${!outs[i]}"/}
+    [[ -e $d ]] && ! denied "${srcs[i]}/$rel" && denied "$d" || continue
+    echo "laminix: kwin won't trust $rel: it runs $run but Exec is $want" >&2
+    exit 1
+  done
+done
