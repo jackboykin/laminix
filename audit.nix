@@ -3,6 +3,7 @@
   writeShellApplication,
   strace,
   gawk,
+  gnugrep,
   coreutils,
 }:
 writeShellApplication {
@@ -10,6 +11,7 @@ writeShellApplication {
   runtimeInputs = [
     strace
     gawk
+    gnugrep
     coreutils
   ];
   text = builtins.readFile ./audit.sh;
