@@ -4,7 +4,7 @@
 
 # The shim keeps the original's name, so say whose failure this is.
 failureHook() {
-  echo "laminix: failed to shim $name, which is unchanged. To build without the shim, remove it from environment.laminix.packages." >&2
+  echo "laminix: failed to shim $name, which is unchanged. To build without the shim, remove it from environment.laminix.packages. If Plasma installs it, set environment.laminix.plasma to \"base\" or \"none\" and list the packages you still want." >&2
 }
 
 outs=($outputs)
