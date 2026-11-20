@@ -29,7 +29,7 @@ fi
 dir=$(mktemp -d)
 trap 'rm -rf "$dir"' EXIT
 # A background job starts with SIGINT ignored, so hand it back to the command.
-strace -ff -qq -e trace=%file,readlink -o "$dir/log" \
+strace -ff -qq -e trace=%file -e signal=none -o "$dir/log" \
   -- env --default-signal=INT sh -c 'exec "$@" >/dev/null 2>&1' sh "$@" &
 tracer=$!
 # strace dies of the signal that killed its last tracee, which bash would report.
