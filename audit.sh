@@ -11,7 +11,10 @@ while getopts t:n:h opt; do
       [[ $OPTARG =~ ^[0-9]+$ ]] || usage
       seconds=$OPTARG
       ;;
-    n) top=$OPTARG ;;
+    n)
+      [[ $OPTARG =~ ^[0-9]+$ ]] || usage
+      top=$OPTARG
+      ;;
     *) usage ;;
   esac
 done
