@@ -122,6 +122,12 @@ let
       $out/bin/bare >$out/share/applications/bare.desktop
   '';
 
+  linked = runCommand "laminix-test-linked" { } ''
+    mkdir -p $out/share/wallpapers/linked/contents
+    echo '{}' >$out/share/wallpapers/linked/metadata.json
+    ln -s ${dep}/share/dep.list $out/share/wallpapers/linked/contents/image
+  '';
+
   widgetFrom =
     name: file:
     runCommand name { } ''
@@ -206,4 +212,5 @@ in
     (widgetFrom "laminix-test-widget-a" "metadata.json")
     (widgetFrom "laminix-test-widget-b" "main.qml")
   ]) "split KPackage";
+  profile-keeps-outside-links = profile "laminix-test-linked-env" [ linked ];
 }
