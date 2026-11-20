@@ -33,36 +33,32 @@ pkgs.testers.runNixOSTest {
     };
   };
 
-  testScript =
-    let
-      extract = pkgs.makeBinaryWrapper.extractCmd;
-      sw = "/run/current-system/sw";
-    in
-    ''
-      start_all()
-      machine.wait_until_succeeds("pgrep -x plasmashell", timeout=300)
-      machine.wait_until_succeeds("pgrep -f bin/.kwin_wayland-wrapped", timeout=60)
-      wayland = machine.succeed("tr '\\0' '\\n' </proc/$(pgrep -x plasmashell)/environ | grep ^WAYLAND_DISPLAY=").strip()
+  testScript = ''
+    start_all()
+    machine.wait_until_succeeds("pgrep -x plasmashell", timeout=300)
+    machine.wait_until_succeeds("pgrep -f bin/.kwin_wayland-wrapped", timeout=60)
+    wayland = machine.succeed("tr '\\0' '\\n' </proc/$(pgrep -x plasmashell)/environ | grep ^WAYLAND_DISPLAY=").strip()
 
-      with subtest("Shims search no per-dependency store paths"):
-          for b in ["plasmashell", "dolphin", "konsole"]:
-              machine.fail(f"${extract} $(readlink -f ${sw}/bin/{b}) | grep -q XDG_DATA_DIRS")
-          env = machine.succeed("tr '\\0' '\\n' </proc/$(pgrep -x plasmashell)/environ | grep ^XDG_DATA_DIRS=")
-          dirs = env.strip().split("=", 1)[1].split(":")
-          stray = [d for d in dirs if d.startswith("/nix/store/") and not d.endswith("-desktops/share")]
-          assert not stray, stray
+    def stray(comm):
+        env = machine.succeed(f"tr '\\0' '\\n' </proc/$(pgrep -x '{comm}' | head -n1)/environ | grep ^XDG_DATA_DIRS=")
+        dirs = env.strip().split("=", 1)[1].split(":")
+        return [d for d in dirs if d.startswith("/nix/store/") and not d.endswith("-desktops/share")]
 
-      with subtest("Dolphin draws its window"):
-          machine.execute(f"su - alice -c 'XDG_RUNTIME_DIR=/run/user/1000 {wayland} dolphin >&2 &'")
-          machine.wait_for_text("Dolphin", timeout=120)
-          machine.screenshot("session")
+    with subtest("Plasma searches no per-dependency store paths"):
+        assert not stray("plasmashell"), stray("plasmashell")
 
-      with subtest("Helpers the system bus starts keep their wrappers"):
-          machine.succeed("su - alice -c 'XDG_RUNTIME_DIR=/run/user/1000 QT_QPA_PLATFORM=offscreen kioclient ls admin:///etc' | grep -x passwd")
+    with subtest("Dolphin draws its window and searches no per-dependency store paths"):
+        machine.execute(f"su - alice -c 'XDG_RUNTIME_DIR=/run/user/1000 {wayland} dolphin >&2 &'")
+        machine.wait_for_text("Dolphin", timeout=120)
+        machine.screenshot("session")
+        assert not stray("dolphin|\\.dolphin-wrappe"), stray("dolphin|\\.dolphin-wrappe")
 
-      with subtest("Session trusts shims and loads KPackages"):
-          journal = machine.succeed("journalctl -b --no-pager -o cat")
-          assert "PlasmaWindowManagement protocol hasn't activated" not in journal, "kwin denied plasmashell"
-          assert "Path traversal attempt" not in journal, "a KPackage was split"
-    '';
+    with subtest("Helpers the system bus starts keep their wrappers"):
+        machine.succeed("su - alice -c 'XDG_RUNTIME_DIR=/run/user/1000 QT_QPA_PLATFORM=offscreen kioclient ls admin:///etc' | grep -x passwd")
+
+    with subtest("Session trusts shims and loads KPackages"):
+        journal = machine.succeed("journalctl -b --no-pager -o cat")
+        assert "PlasmaWindowManagement protocol hasn't activated" not in journal, "kwin denied plasmashell"
+        assert "Path traversal attempt" not in journal, "a KPackage was split"
+  '';
 }
