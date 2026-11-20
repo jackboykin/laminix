@@ -82,6 +82,12 @@ let
     services.desktopManager.plasma6.enable = true;
     environment.laminix.plasma = "none";
   };
+  fromPkgs = eval (
+    { pkgs, ... }:
+    {
+      services.desktopManager.plasma6.enable = pkgs.stdenv.hostPlatform.isLinux;
+    }
+  );
   idle = eval { environment.laminix.packages = lib.mkForce [ ]; };
   off = eval { environment.laminix.enable = lib.mkForce false; };
   deepExclude = eval { environment.laminix.exclude = lib.mkForce [ "share/dbus-1/services" ]; };
@@ -113,6 +119,7 @@ let
       && plasma.pkgs.kdePackages.okular.laminix
       && plasma.pkgs.kdePackages.kded.laminix
       && failed plasma == [ ];
+    "a Plasma switch that reads pkgs still evaluates" = fromPkgs.pkgs.kdePackages.okular.laminix;
     "the base Plasma set leaves services alone" =
       plasmaBase.pkgs.kdePackages.okular.laminix && !(plasmaBase.pkgs.kdePackages.kded.laminix or false);
     "a Plasma package missing or removed from pkgs is skipped" = failed plasmaMissing == [ ];

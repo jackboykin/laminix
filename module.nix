@@ -125,15 +125,16 @@ let
       "xdg-desktop-portal-kde"
     ];
   };
-  plasmaPaths = map (p: [
-    "kdePackages"
-    p
-  ]) plasmaSets.${cfg.plasma};
+  plasmaPaths =
+    set:
+    map (p: [
+      "kdePackages"
+      p
+    ]) plasmaSets.${set};
   userPaths = map (lib.splitString ".") cfg.packages;
-  paths = lib.unique (plasmaPaths ++ userPaths);
   # Removed packages linger as aliases that throw, which hasAttrByPath still sees.
   exists = p: lib.hasAttrByPath p base && (builtins.tryEval (lib.getAttrFromPath p base)).success;
-  present = lib.filter exists paths;
+  present = lib.filter exists (lib.unique (plasmaPaths cfg.plasma ++ userPaths));
   install =
     pkg:
     shim pkg
@@ -141,10 +142,12 @@ let
       override = null;
       overrideAttrs = null;
     } pkg;
+  # Which names are replaced can't depend on cfg.plasma. Its default reads
+  # services, so a services definition that reads pkgs would recurse.
   shimmed = lib.updateManyAttrsByPath (map (path: {
     inherit path;
-    update = install;
-  }) present) base;
+    update = pkg: if lib.elem path present then install pkg else pkg;
+  }) (lib.filter exists (lib.unique (plasmaPaths "full" ++ userPaths)))) base;
 in
 {
   _file = __curPos.file;
