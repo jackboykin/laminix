@@ -8,48 +8,39 @@ For each package you choose, laminix builds a shim: a copy made of links to the 
 
 Each moved directory lies over your profile as a thin layer or *lamina*.
 
-KDE Plasma gains the most. Its lists add up to hundreds of thousands of failed file lookups, and opening the app launcher, a system tray popup, or a KDE app takes noticeably longer than on other distributions. KDE slowness has been an issue for quite some time ([nixpkgs#363068](https://github.com/NixOS/nixpkgs/issues/363068), [nixpkgs#126590](https://github.com/NixOS/nixpkgs/issues/126590)).
+KDE Plasma gains the most. Its lists add up to hundreds of thousands of failed file lookups, and opening the app launcher, a system tray popup, or a KDE app takes noticeably longer than on other distributions. KDE slowness has been an issue for quite some time ([nixpkgs#126590](https://github.com/NixOS/nixpkgs/issues/126590)).
 
-Failed file lookups in each program's first 15 seconds, in a Plasma 6.7 VM, with the program shimmed. Plasma and the apps it installs are shimmed by default; the rest need listing in `environment.laminix.packages`.
+The tables count failed file lookups in each program's first 15 seconds in a Plasma 6.7 VM.
 
-<table>
-<tr>
-<td valign="top">
+With Plasma, turning laminix on shims the desktop and the apps and services Plasma installs. Here are a few of them:
 
-| KDE | Stock | laminix |
+| Program | Stock | laminix |
 | --- | ---: | ---: |
 | plasmashell | 758,000 | 257,000 |
 | KMail | 81,700 | 27,800 |
 | Dolphin | 77,800 | 38,300 |
 | System Monitor | 67,000 | 6,060 |
-| KDevelop | 41,700 | 18,200 |
 | Discover | 25,100 | 10,800 |
-| Krita | 24,700 | 19,400 |
-| Kdenlive | 21,400 | 13,800 |
-| Haruna | 15,700 | 7,270 |
 | Okular | 14,100 | 5,980 |
 | System Settings | 13,800 | 6,250 |
 | Gwenview | 13,800 | 6,660 |
-| digiKam | 13,100 | 6,630 |
 | Konsole | 12,800 | 6,060 |
 
-</td>
-<td valign="top">
+Any other program keeps its stock wrapper until you list it in `environment.laminix.packages`:
 
-| Other programs | Stock | laminix |
+| Program | Stock | laminix |
 | --- | ---: | ---: |
 | OBS Studio | 37,800 | 13,600 |
+| Krita | 24,700 | 19,400 |
+| Kdenlive | 21,400 | 13,800 |
+| Haruna | 15,700 | 7,270 |
 | Telegram | 14,400 | 10,800 |
-| Nextcloud client | 9,700 | 4,960 |
+| digiKam | 13,100 | 6,630 |
 | Prism Launcher | 8,300 | 7,370 |
-| PCSX2 | 7,770 | 4,870 |
 | VLC | 5,040 | 3,570 |
 | qBittorrent | 3,530 | 2,710 |
-| KeePassXC | 3,440 | 2,970 |
 
-</td>
-</tr>
-</table>
+Qt programs gain the most. GTK programs typically gain little.
 
 ## Install
 
@@ -84,9 +75,9 @@ Without flakes, import `module.nix` from a copy of the repository, such as one f
 }
 ```
 
-With Plasma 6, laminix shims the packages Plasma installs that have wrappers to rebuild, including the ones it installs for your hardware and services and the KDE PIM apps from `programs.kde-pim`. `environment.laminix.plasma` picks which: `"full"`, the default, covers the desktop, its apps, and its background services; `"base"` leaves out the services; `"none"` leaves Plasma alone. The option's description in `module.nix` lists each set's packages.
+`environment.laminix.plasma` picks which of Plasma's packages get shims. `"full"`, the default, is every package the Plasma and KDE PIM modules can install that has a wrapper to rebuild. `"base"` keeps only the desktop and its apps, and `"none"` leaves Plasma alone. [`module.nix`](module.nix#L43-L127) lists the packages of each.
 
-To shim more programs, list their attribute paths. They're added to the Plasma set:
+List other programs by attribute path. They're shimmed along with Plasma's:
 
 ```nix
 {
@@ -104,11 +95,13 @@ If you install nothing with `nix-env`, `nix profile`, or Home Manager without `h
 ## Caveats
 
 - A shim works only when a profile installs it directly, as `environment.systemPackages` does. A module that wraps it first, such as `programs.obs-studio`, fails the build.
-- Only NixOS modules see shims. Packages, including ones your configuration builds with `pkgs.callPackage`, get the originals, so nothing recompiles against a shim.
-- Files a wrapper showed to one program, such as icons, Qt plugins, and QML modules, become visible to every program. Files that would register something for everyone, such as services, menu entries, and shortcuts, stay out. `environment.laminix.exclude` lists them, and you can add more.
 - `override` and `overrideAttrs` on a shimmed package give the plain package without a shim. To patch a package and keep its shim, patch it in an overlay.
+- Only NixOS modules see shims. Packages, including ones your configuration builds with `pkgs.callPackage`, get the originals, so nothing recompiles against a shim.
+- A path compiled into a program skips the shim. `pam_kwallet` starts `ksecretd` this way and Info Center starts System Settings, so both run with their stock wrappers.
+- Files a wrapper showed to one program, such as icons, Qt plugins, and QML modules, become visible to every program. Files that would register something for everyone, such as services, menu entries, and shortcuts, stay out. `environment.laminix.exclude` lists them, and you can add more.
 - Programs a package's own system bus services, systemd units, polkit actions, or udev rules start keep their wrappers, since they run outside the session, where nothing searches the profile. A NixOS module that starts a shimmed program outside the session some other way gets the shim.
 - The system build fails, instead of the session, if a shim would split a Plasma package or lose KWin's trust.
+- laminix builds `pkgs` from the `environment.laminix` options, so their definitions can't read `pkgs`. Neither can the attribute names under `environment`: `environment = lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux { … }` recurses forever, and `lib.mkIf` in its place evaluates.
 
 ## Measure
 
